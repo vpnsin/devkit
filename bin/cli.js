@@ -9,7 +9,14 @@
 //   npx devkit init [--node|--next] [--force] [--no-install]
 
 import { execSync } from 'node:child_process';
-import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, chmodSync } from 'node:fs';
+import {
+  mkdirSync,
+  copyFileSync,
+  writeFileSync,
+  readFileSync,
+  chmodSync,
+  constants,
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -70,11 +77,18 @@ if (cmd !== 'init') {
 
 // ── Load the consumer package.json ──────────────────────────────────────────
 const pkgPath = join(CWD, 'package.json');
-if (!existsSync(pkgPath)) {
-  console.error('No package.json found in the current directory. Run this inside a Node project.');
-  process.exit(1);
+let pkg;
+try {
+  pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+} catch (err) {
+  if (err.code === 'ENOENT') {
+    console.error(
+      'No package.json found in the current directory. Run this inside a Node project.'
+    );
+    process.exit(1);
+  }
+  throw err;
 }
-const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
 const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
 
 // App starters (opt-in): scaffold a runnable skeleton, not just tooling config.
@@ -130,9 +144,15 @@ function ensureDir(file) {
 
 function copyTemplate(rel, dest, { executable = false } = {}) {
   const target = join(CWD, dest);
-  if (existsSync(target) && !force) return log.skip(dest);
   ensureDir(target);
-  copyFileSync(join(TEMPLATES, rel), target);
+  try {
+    // COPYFILE_EXCL fails atomically (EEXIST) if the target exists — this avoids
+    // the check-then-write race of a separate existsSync() guard.
+    copyFileSync(join(TEMPLATES, rel), target, force ? 0 : constants.COPYFILE_EXCL);
+  } catch (err) {
+    if (err.code === 'EEXIST') return log.skip(dest);
+    throw err;
+  }
   if (executable) {
     try {
       chmodSync(target, 0o755);
@@ -145,9 +165,15 @@ function copyTemplate(rel, dest, { executable = false } = {}) {
 
 function writeFileIfAbsent(dest, content) {
   const target = join(CWD, dest);
-  if (existsSync(target) && !force) return log.skip(dest);
   ensureDir(target);
-  writeFileSync(target, content);
+  try {
+    // The 'wx' flag fails atomically (EEXIST) if the file exists — this avoids
+    // the check-then-write race of a separate existsSync() guard.
+    writeFileSync(target, content, { flag: force ? 'w' : 'wx' });
+  } catch (err) {
+    if (err.code === 'EEXIST') return log.skip(dest);
+    throw err;
+  }
   log.add(dest);
 }
 
@@ -226,11 +252,16 @@ console.log(c.bold('\nGitHub workflows'));
 copyTemplate('github/workflows/ci.yml', '.github/workflows/ci.yml');
 copyTemplate('github/workflows/release-please.yml', '.github/workflows/release-please.yml');
 copyTemplate('release-please-config.json', 'release-please-config.json');
-writeFileIfAbsent('.release-please-manifest.json', `${JSON.stringify({ '.': pkg.version || '0.0.0' }, null, 2)}\n`);
+writeFileIfAbsent(
+  '.release-please-manifest.json',
+  `${JSON.stringify({ '.': pkg.version || '0.0.0' }, null, 2)}\n`
+);
 copyTemplate('dependabot.yml', '.github/dependabot.yml');
 
 if (isPrivate) {
-  log.info('private repo → skipping GHAS workflows (CodeQL/Trivy/Dependency Review need a paid licence)');
+  log.info(
+    'private repo → skipping GHAS workflows (CodeQL/Trivy/Dependency Review need a paid licence)'
+  );
   log.info('dependency security covered by Dependabot + the npm audit step in ci.yml');
 } else {
   // GHAS — free on public repos:
@@ -261,7 +292,10 @@ copyTemplate('github/SECURITY.md', '.github/SECURITY.md');
 copyTemplate('github/CONTRIBUTING.md', '.github/CONTRIBUTING.md');
 copyTemplate('github/CODEOWNERS', '.github/CODEOWNERS');
 copyTemplate('github/ISSUE_TEMPLATE/bug_report.yml', '.github/ISSUE_TEMPLATE/bug_report.yml');
-copyTemplate('github/ISSUE_TEMPLATE/feature_request.yml', '.github/ISSUE_TEMPLATE/feature_request.yml');
+copyTemplate(
+  'github/ISSUE_TEMPLATE/feature_request.yml',
+  '.github/ISSUE_TEMPLATE/feature_request.yml'
+);
 copyTemplate('github/ISSUE_TEMPLATE/config.yml', '.github/ISSUE_TEMPLATE/config.yml');
 copyTemplate('README.template.md', 'README.md'); // only if absent (never clobbers)
 
@@ -345,7 +379,8 @@ if (has('--no-install')) {
   if (prodDeps.length) log.info(`npm i ${prodDeps.join(' ')}`);
   log.info(`npm i -D ${devDeps.join(' ')}`);
   try {
-    if (prodDeps.length) execSync(`npm install ${prodDeps.join(' ')}`, { cwd: CWD, stdio: 'inherit' });
+    if (prodDeps.length)
+      execSync(`npm install ${prodDeps.join(' ')}`, { cwd: CWD, stdio: 'inherit' });
     execSync(`npm install -D ${devDeps.join(' ')}`, { cwd: CWD, stdio: 'inherit' });
   } catch {
     console.log(c.yellow('\n  ! Install failed — run it manually:'));
@@ -366,12 +401,22 @@ try {
 // ── Done ────────────────────────────────────────────────────────────────────
 console.log(`\n${c.green('✓ devkit wired up.')}\n`);
 console.log(`${c.bold('Next steps:')}`);
-console.log(`  1. Fill placeholders: ${c.cyan('.github/CODEOWNERS')} (@OWNER) and the security contact in ${c.cyan('.github/SECURITY.md')}.`);
+console.log(
+  `  1. Fill placeholders: ${c.cyan('.github/CODEOWNERS')} (@OWNER) and the security contact in ${c.cyan('.github/SECURITY.md')}.`
+);
 console.log(`  2. One-time normalise formatting:   ${c.cyan('npm run format')}`);
-console.log(`  3. Verify the gates:                ${c.cyan('npm run lint && npm run type-check && npm run lint:md')}`);
-console.log(`  4. In GitHub repo settings, enable Code scanning, Secret scanning & Dependency graph.`);
-console.log(`  5. Commit with a Conventional Commit ${c.dim('e.g. git commit -m "chore: adopt devkit"')}`);
+console.log(
+  `  3. Verify the gates:                ${c.cyan('npm run lint && npm run type-check && npm run lint:md')}`
+);
+console.log(
+  `  4. In GitHub repo settings, enable Code scanning, Secret scanning & Dependency graph.`
+);
+console.log(
+  `  5. Commit with a Conventional Commit ${c.dim('e.g. git commit -m "chore: adopt devkit"')}`
+);
 if (wantsBackend || wantsFrontend) {
-  console.log(`  6. Run the app:                     ${c.cyan('npm run dev')} ${c.dim('(copy .env.example → .env first)')}`);
+  console.log(
+    `  6. Run the app:                     ${c.cyan('npm run dev')} ${c.dim('(copy .env.example → .env first)')}`
+  );
 }
 console.log('');
