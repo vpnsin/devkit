@@ -46,6 +46,7 @@ ${c.bold('Options:')}
   --next         force the Next.js ESLint preset
   --node         force the base (Node) ESLint preset
   --jest         also scaffold Jest (ts-jest) config, scripts and deps
+  --vitest       also scaffold Vitest config, scripts and deps
   --scorecard    also add the OSSF Scorecard workflow (public repos)
   --publish      also add the npm publish-on-release workflow (needs NPM_TOKEN)
   --sonar        also add SonarCloud analysis (needs SONAR_TOKEN)
@@ -125,9 +126,15 @@ const tsconfigBody = isNext
     };
 writeFileIfAbsent('tsconfig.json', `${JSON.stringify(tsconfigBody, null, 2)}\n`);
 
-// Jest (opt-in): shim the shared preset.
+// Test runner (opt-in): shim the shared preset. Jest or Vitest, not both.
 if (has('--jest')) {
   writeFileIfAbsent('jest.config.mjs', `export { default } from 'ladevconfig/jest';\n`);
+}
+if (has('--vitest')) {
+  writeFileIfAbsent(
+    'vitest.config.mjs',
+    `import { defineConfig } from 'vitest/config';\nimport base from 'ladevconfig/vitest';\nexport default defineConfig(base);\n`
+  );
 }
 
 // ── 2. Copied templates ─────────────────────────────────────────────────────
@@ -137,6 +144,7 @@ copyTemplate('husky/commit-msg', '.husky/commit-msg', { executable: true });
 copyTemplate('vscode/settings.json', '.vscode/settings.json');
 copyTemplate('vscode/extensions.json', '.vscode/extensions.json');
 copyTemplate('editorconfig', '.editorconfig');
+copyTemplate('nvmrc', '.nvmrc');
 copyTemplate('markdownlint-cli2.jsonc', '.markdownlint-cli2.jsonc');
 
 console.log(c.bold('\nGitHub workflows'));
@@ -181,6 +189,9 @@ const scripts = {
   ...(has('--jest')
     ? { test: 'jest', 'test:watch': 'jest --watch', 'test:coverage': 'jest --coverage' }
     : {}),
+  ...(has('--vitest')
+    ? { test: 'vitest run', 'test:watch': 'vitest', 'test:coverage': 'vitest run --coverage' }
+    : {}),
 };
 pkg.scripts ??= {};
 let changed = false;
@@ -214,6 +225,7 @@ const devDeps = [
   'typescript',
   ...(isNext ? ['eslint-config-next'] : []),
   ...(has('--jest') ? ['jest', 'ts-jest', '@types/jest'] : []),
+  ...(has('--vitest') ? ['vitest', '@vitest/coverage-v8'] : []),
 ];
 
 if (has('--no-install')) {

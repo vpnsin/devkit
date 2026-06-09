@@ -14,6 +14,7 @@
     "./commitlint": "./commitlint/index.js",
     "./lint-staged": "./lint-staged/index.js",
     "./jest": "./jest/index.js",
+    "./vitest": "./vitest/index.js",
     "./tsconfig/*": "./tsconfig/*",
     "./package.json": "./package.json"
   },
@@ -23,6 +24,7 @@
     "commitlint",
     "lint-staged",
     "jest",
+    "vitest",
     "tsconfig",
     "templates",
     "bin",

@@ -34,6 +34,8 @@ Existing files are left untouched unless you pass `--force`.
 ```bash
 npx ladevconfig init --next        # force the Next.js preset
 npx ladevconfig init --node        # force the base (Node) preset
+npx ladevconfig init --jest        # scaffold Jest (ts-jest)
+npx ladevconfig init --vitest      # scaffold Vitest (alternative to Jest)
 npx ladevconfig init --scorecard   # also add the OSSF Scorecard workflow (public repos)
 npx ladevconfig init --publish     # also add npm publish-on-release (needs NPM_TOKEN secret)
 npx ladevconfig init --sonar       # also add SonarCloud analysis (needs SONAR_TOKEN secret)
@@ -78,6 +80,11 @@ export { default } from 'ladevconfig/lint-staged';
 
 // jest.config.mjs (Node + ts-jest)
 export { default } from 'ladevconfig/jest';
+
+// vitest.config.mjs (alternative to Jest)
+import { defineConfig } from 'vitest/config';
+import base from 'ladevconfig/vitest';
+export default defineConfig(base);
 ```
 
 ```jsonc
@@ -100,7 +107,17 @@ export { default } from 'ladevconfig/jest';
 | lint-staged     | `ladevconfig/lint-staged`                | ESLint/Prettier/markdownlint on staged files    |
 | TypeScript      | `ladevconfig/tsconfig/{base,node,next}.json` | strict base + Node/Next variants            |
 | Jest            | `ladevconfig/jest`                       | ts-jest preset (opt-in via `--jest`)            |
+| Vitest          | `ladevconfig/vitest`                     | Vitest preset (opt-in via `--vitest`)           |
 | EditorConfig    | `templates/editorconfig`                 | LF, UTF-8, 2-space — complements Prettier       |
+| Node version    | `templates/nvmrc` → `.nvmrc`             | single source of truth; CI reads it via `node-version-file` |
+
+## Not included (and why)
+
+- **Babel / Webpack** — frameworks own this layer. Next.js uses SWC + webpack/
+  Turbopack (configure via `next.config.js`); Vite/Vitest use esbuild + Rollup;
+  plain TS libraries build with `tsc`/tsup. A shared Babel or Webpack config
+  would conflict or go unused. (A `tsup`/Rollup preset can be added if a
+  non-framework browser library ever needs bundling.)
 | markdownlint    | `templates/markdownlint-cli2.jsonc`      | tuned to coexist with Prettier                  |
 | Husky hooks     | `templates/husky/*`                      | pre-commit → lint-staged, commit-msg → commitlint |
 | CI              | `templates/github/workflows/ci.yml`      | type-check, lint, lint:md, format, build (each `--if-present`) |
