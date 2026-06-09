@@ -36,8 +36,13 @@ npx ladevconfig init --next        # force the Next.js preset
 npx ladevconfig init --node        # force the base (Node) preset
 npx ladevconfig init --scorecard   # also add the OSSF Scorecard workflow (public repos)
 npx ladevconfig init --publish     # also add npm publish-on-release (needs NPM_TOKEN secret)
+npx ladevconfig init --sonar       # also add SonarCloud analysis (needs SONAR_TOKEN secret)
 npx ladevconfig init --no-install  # scaffold only, install deps yourself
 ```
+
+`--sonar` adds a CI-based SonarCloud scan and a `sonar-project.properties`.
+Set a `SONAR_TOKEN` secret, fill in your org/project keys, and turn **off**
+Automatic Analysis in SonarCloud (CI and Automatic Analysis can't both run).
 
 The `--publish` workflow publishes on a GitHub Release (created when a
 release-please PR is merged). Add an `NPM_TOKEN` repository secret (an npm

@@ -1,0 +1,31 @@
+name: SonarCloud
+
+# CI-based SonarCloud (SonarQube Cloud) analysis. Requires:
+#   1. a SONAR_TOKEN repo secret (SonarCloud → My Account → Security → token), and
+#   2. Automatic Analysis turned OFF in SonarCloud (project → Administration →
+#      Analysis Method) — CI and Automatic Analysis cannot both run.
+# Project keys live in sonar-project.properties.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  sonarcloud:
+    name: SonarCloud scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history improves new-code detection & blame
+
+      - name: SonarCloud scan
+        uses: SonarSource/sonarqube-scan-action@v8.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io

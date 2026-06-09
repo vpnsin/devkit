@@ -47,6 +47,7 @@ ${c.bold('Options:')}
   --node         force the base (Node) ESLint preset
   --scorecard    also add the OSSF Scorecard workflow (public repos)
   --publish      also add the npm publish-on-release workflow (needs NPM_TOKEN)
+  --sonar        also add SonarCloud analysis (needs SONAR_TOKEN)
   --force        overwrite existing config/template files
   --no-install   skip installing dev dependencies
   -h, --help     show this help
@@ -129,6 +130,10 @@ if (has('--scorecard')) {
 }
 if (has('--publish')) {
   copyTemplate('github/workflows/publish.yml', '.github/workflows/publish.yml');
+}
+if (has('--sonar')) {
+  copyTemplate('github/workflows/sonarqube.yml', '.github/workflows/sonarqube.yml');
+  copyTemplate('sonar-project.properties', 'sonar-project.properties');
 }
 
 console.log(c.bold('\nGovernance & docs'));
