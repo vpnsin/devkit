@@ -1,0 +1,65 @@
+{
+  "name": "ladevconfig",
+  "version": "0.1.0",
+  "description": "Shared ESLint, Prettier, commitlint, markdownlint, lint-staged, Husky and GitHub CI/release config for Node.js & Next.js repos.",
+  "type": "module",
+  "bin": {
+    "ladevconfig": "bin/cli.js"
+  },
+  "exports": {
+    "./eslint": "./eslint/base.js",
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/next": "./eslint/next.js",
+    "./prettier": "./prettier/index.js",
+    "./commitlint": "./commitlint/index.js",
+    "./lint-staged": "./lint-staged/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "eslint",
+    "prettier",
+    "commitlint",
+    "lint-staged",
+    "templates",
+    "bin",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.18"
+  },
+  "scripts": {
+    "test": "node --check bin/cli.js && node -e \"import('./eslint/base.js').then(()=>console.log('eslint/base ok'))\""
+  },
+  "keywords": [
+    "eslint-config",
+    "prettier-config",
+    "commitlint-config",
+    "markdownlint",
+    "husky",
+    "lint-staged",
+    "release-please",
+    "config",
+    "nextjs"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@commitlint/config-conventional": "^19.8.1",
+    "@eslint/js": "^9.18.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "globals": "^15.15.0",
+    "typescript-eslint": "^8.21.0"
+  },
+  "peerDependencies": {
+    "eslint": ">=9",
+    "prettier": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "eslint-config-next": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
