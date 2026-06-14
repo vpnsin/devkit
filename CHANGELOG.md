@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/vpnsin/devkit/compare/v0.1.3...v0.1.4) (2026-06-10)
+
+
+### Features
+
+* include version in health endpoint ([2bcad78](https://github.com/vpnsin/devkit/commit/2bcad78a3d31cf2058ab98fa21adece64c3b01ab))
+
 ## [0.1.3](https://github.com/vpnsin/devkit/compare/v0.1.2...v0.1.3) (2026-06-10)
 
 
